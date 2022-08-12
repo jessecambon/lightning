@@ -13,19 +13,21 @@
 # limitations under the License.
 
 import os
+
 from pytorch_lightning.plugins.environments.cluster_environment import ClusterEnvironment
 
+
 class AzureOpenMPIEnvironment(ClusterEnvironment):
-    """
-    Environment for an OpenMPI environment on Azure
+    """Environment for an OpenMPI environment on Azure.
 
     See Azure documentation here: https://docs.microsoft.com/en-us/azure/machine-learning/how-to-train-distributed-gpu#mpi
     """
+
     def __init__(self, devices: int = 1) -> None:
-        """ devices : devices per node (same as trainer parameter)"""
+        """devices : devices per node (same as trainer parameter)"""
         super().__init__()
         self.devices = devices
-        
+
     @property
     def creates_processes_externally(self) -> bool:
         """Return True if the cluster is managed (you don't launch processes yourself)"""
@@ -35,7 +37,7 @@ class AzureOpenMPIEnvironment(ClusterEnvironment):
     def main_address(self) -> str:
         # AZ_BATCH_MASTER_NODE should be defined when num_nodes > 1
         if "AZ_BATCH_MASTER_NODE" in os.environ:
-            return os.environ.get("AZ_BATCH_MASTER_NODE").split(':')[0]
+            return os.environ.get("AZ_BATCH_MASTER_NODE").split(":")[0]
         elif "AZ_BATCHAI_MPI_MASTER_NODE" in os.environ:
             return os.environ.get("AZ_BATCHAI_MPI_MASTER_NODE")
 
@@ -43,14 +45,17 @@ class AzureOpenMPIEnvironment(ClusterEnvironment):
     def main_port(self) -> int:
         # AZ_BATCH_MASTER_NODE should be defined when num_nodes > 1
         if "AZ_BATCH_MASTER_NODE" in os.environ:
-            return int(os.environ.get("AZ_BATCH_MASTER_NODE").split(':')[1])
+            return int(os.environ.get("AZ_BATCH_MASTER_NODE").split(":")[1])
         else:
-            return int(47586) # set port to arbitrary high number
+            return int(47586)  # set port to arbitrary high number
 
     @staticmethod
     def detect() -> bool:
-        return "OMPI_COMM_WORLD_SIZE" in os.environ and "OMPI_COMM_WORLD_LOCAL_RANK" in os.environ and \
-             ("AZ_BATCH_MASTER_NODE" in os.environ or "AZ_BATCHAI_MPI_MASTER_NODE" in os.environ)
+        return (
+            "OMPI_COMM_WORLD_SIZE" in os.environ
+            and "OMPI_COMM_WORLD_LOCAL_RANK" in os.environ
+            and ("AZ_BATCH_MASTER_NODE" in os.environ or "AZ_BATCHAI_MPI_MASTER_NODE" in os.environ)
+        )
 
     def world_size(self) -> int:
         return int(os.environ.get("OMPI_COMM_WORLD_SIZE"))
@@ -69,4 +74,4 @@ class AzureOpenMPIEnvironment(ClusterEnvironment):
 
     def node_rank(self) -> int:
         # this may not exist, defaulting to 0
-        return int(os.environ.get("OMPI_COMM_WORLD_RANK",0)) // int(self.devices)
+        return int(os.environ.get("OMPI_COMM_WORLD_RANK", 0)) // int(self.devices)
